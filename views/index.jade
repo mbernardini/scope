@@ -1,0 +1,33 @@
+!!! 5
+html(lang="en")
+   head
+      title= appTitle
+      link(rel="stylesheet", href="bootstrap/css/bootstrap.min.css") 
+      script(src='http://code.jquery.com/jquery-latest.js')
+      script(src='bootstrap/js/bootstrap.min.js')
+      script(src='http://cdn.sockjs.org/sockjs-0.3.min.js')
+
+   body
+      h1= appTitle
+      div(class="container-fluid")
+         div(class="row-fluid")
+            div(class="span8")
+               canvas(id="plot", width="600",height="400")
+            div(class="span4")
+               p TODO: Fill this section in with device info.
+         div(class="row-fluid")
+            div(class="span4")
+               div(class="btn-group pull-left",data-toggle="buttons-radio")
+                  button(class="btn btn-success start", type="button",onclick="startGraph(event)") 
+                     i(class="icon-play")
+                  button(class="btn btn-danger stop", type="button", onclick="stopGraph(event)")
+                     i(class="icon-stop") 
+
+            div(class="span4")
+               div(class="btn-group",data-toggle="buttons-radio")
+                  button(type="button",class="btn btn-inverse bezierToggleButton",onclick="setBezier(event)") Bezier
+                  button(type="button",class="btn btn-inverse lineToggleButton",onclick="setLine(event)") Line
+      script(src='/smoothie.js')
+      script(src='/serverConnection.js')   
+         
+      include includes/footer
