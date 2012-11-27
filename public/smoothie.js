@@ -86,11 +86,13 @@ function SmoothieChart(options) {
   options.interpolation = options.interpolation || "bezier";
   options.scaleSmoothing = options.scaleSmoothing || 0.125;
   options.maxDataSetLength = options.maxDataSetLength || 2; 
-  options.timestampFormatter = options.timestampFormatter || null;	
+  options.timestampFormatter = options.timestampFormatter || null;
+  options.verticalAxisFormatter = options.verticalAxisFormatter || null;
   this.options = options;
   this.seriesSet = [];
   this.currentValueRange = 1;
   this.currentVisMinValue = 0;
+  this.canvas = null;
 }
 
 SmoothieChart.prototype.addTimeSeries = function(timeSeries, options) {
@@ -101,25 +103,39 @@ SmoothieChart.prototype.removeTimeSeries = function(timeSeries) {
 	this.seriesSet.splice(this.seriesSet.indexOf(timeSeries), 1);
 };
 
+/**
+ * Request animation frame shim to ensure cross browser compatibility.
+ */
+window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       || 
+              window.webkitRequestAnimationFrame || 
+              window.mozRequestAnimationFrame    || 
+              window.oRequestAnimationFrame      || 
+              window.msRequestAnimationFrame     || 
+              function( callback ){
+                window.setTimeout(callback, 1000 / 60);
+              };
+    })();
+
 SmoothieChart.prototype.streamTo = function(canvas, delay) {
   var self = this;
-  this.render_on_tick = function() {
-    self.render(canvas, new Date().getTime() - (delay || 0));
+  this.render_on_tick = function(time) {
+    self.render(canvas, time);//new Date().getTime() - (delay || 0));
   };
 
   this.start();
+  //this.canvas = canvas;
+  //self.render(new Date().getTime() - (delay || 0));
+  //window.requestAnimationFrame(self.render,this.canvas);
 };
 
 SmoothieChart.prototype.start = function() {
-  if (!this.timer)
-    this.timer = setInterval(this.render_on_tick, 1000/this.options.fps);
+  this.isRunning = true;
+  this.render_on_tick(new Date().getTime());
 };
 
 SmoothieChart.prototype.stop = function() {
-  if (this.timer) {
-    clearInterval(this.timer);
-    this.timer = undefined;
-  }
+   this.isRunning=false;
 };
 
 // Sample timestamp formatting function 
@@ -129,9 +145,15 @@ SmoothieChart.timeFormatter = function(dateObject) {
 };
 
 SmoothieChart.prototype.render = function(canvas, time) {
+  // Set up the animation for the next frame before rendering.
+  if(this.isRunning){
+      window.requestAnimFrame(this.render_on_tick);
+  }
   var canvasContext = canvas.getContext("2d");
   var options = this.options;
-  var dimensions = {top: 0, left: 0, width: canvas.clientWidth, height: canvas.clientHeight};
+  canvas.width = canvas.parentNode.clientWidth;
+  canvas.height = canvas.parentNode.clientHeight;
+  var dimensions = {top: 0, left: 0, width: canvas.width, height: canvas.height};
   
   // Save the state of the canvas context, any transformations applied in this method
   // will get removed from the stack at the end of this method when .restore() is called.
@@ -177,7 +199,7 @@ SmoothieChart.prototype.render = function(canvas, time) {
         // SmoothieChart.timeFormatter function above is one such formatting option
         var ts = options.timestampFormatter(tx);
         var txtwidth=(canvasContext.measureText(ts).width/2)+canvasContext.measureText(minValueString).width + 4;	
-        if (gx<dimensions.width - txtwidth){
+        if (gx<dimensions.width - txtwidth/2){
           canvasContext.fillStyle = options.labels.fillStyle;
           // Insert the time string so it doesn't overlap on the minimum value
           canvasContext.fillText(ts, gx-(canvasContext.measureText(ts).width / 2), dimensions.height-2);	
@@ -187,20 +209,7 @@ SmoothieChart.prototype.render = function(canvas, time) {
     }
   }
 
-  // Horizontal (value) dividers.
-  for (var v = 1; v < options.grid.verticalSections; v++) {
-    var gy = Math.round(v * dimensions.height / options.grid.verticalSections);
-    canvasContext.beginPath();
-    canvasContext.moveTo(0, gy);
-    canvasContext.lineTo(dimensions.width, gy);
-    canvasContext.stroke();
-    canvasContext.closePath();
-  }
-  // Bounding rectangle.
-  canvasContext.beginPath();
-  canvasContext.strokeRect(0, 0, dimensions.width, dimensions.height);
-  canvasContext.closePath();
-  canvasContext.restore();
+
 
   // Calculate the current scale of the chart, from all time series.
   var maxValue = Number.NaN;
@@ -222,6 +231,31 @@ SmoothieChart.prototype.render = function(canvas, time) {
       canvasContext.restore(); // without this there is crash in Android browser
       return;
   }
+  
+  
+  // Horizontal (value) dividers.
+  var diffPerDivision = (maxValue - minValue)/options.grid.verticalSections;
+  for (var v = 1; v < options.grid.verticalSections; v++) {
+    var gy = Math.round(v * dimensions.height / options.grid.verticalSections);
+    canvasContext.beginPath();
+    canvasContext.moveTo(0, gy);
+    canvasContext.lineTo(dimensions.width, gy);
+    canvasContext.stroke();
+    if(options.verticalAxisFormatter){
+       var vLabel = options.verticalAxisFormatter(maxValue - v*diffPerDivision);
+       var vtxtHeight=(canvasContext.measureText(vLabel).height/2) + 4;
+          canvasContext.fillStyle = options.labels.fillStyle;
+          canvasContext.fillText(vLabel, 5, gy - 5); 
+    }
+    
+    canvasContext.closePath();
+  }
+  // Bounding rectangle.
+  canvasContext.beginPath();
+  canvasContext.strokeRect(0, 0, dimensions.width, dimensions.height);
+  canvasContext.closePath();
+  canvasContext.restore();
+  
 
   // Scale the maxValue to add padding at the top if required
   if (options.maxValue != null)

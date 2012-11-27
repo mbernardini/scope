@@ -24,10 +24,45 @@ sockjs_echo.on('connection', function(conn) {
 
     // Echo.
     conn.on('data', function(message) {
-        conn.write(message);
+       if(message == 'ping')
+       {
+          conn.write('pong');
+       }
     });
 });
 
+function roundToPrecision(number, precision){
+   return Math.round(number * 1000)/1000;
+}
+
+function getDataForTimeSpan(beginTime,endTime){
+   var measurementsPerSecond = 100;
+   var delta = 1000/measurementsPerSecond;
+   var arr = [];
+   var time = beginTime;
+   while(time < endTime){
+      var measurement = { time: time,
+                          values: [roundToPrecision(Math.sin(time/1000)+0.1*(Math.random()-0.5),3), 
+                                   roundToPrecision(Math.cos(time/1000)+0.1*(Math.random()-0.5),3)]};
+      arr.push(measurement);
+      time = time + delta;
+   } 
+   return arr;
+}
+
+var TIMER_INTERVAL = 100;
+var timerInterval = setInterval(function(){
+   var time = new Date().getTime() - TIMER_INTERVAL;
+   var endTime = time+TIMER_INTERVAL;
+   var arr = getDataForTimeSpan(time,endTime);
+   
+   var message = {timeSpanStart:time,timeSpanEnd:endTime,samplingRate:100,data:arr}
+   var encodedMeasurement = JSON.stringify(message);
+   for(var connId in connections)
+   {
+      connections[connId].write(encodedMeasurement);  
+   }
+}, TIMER_INTERVAL);
 
 var app = express();
 var server = http.createServer(app);
