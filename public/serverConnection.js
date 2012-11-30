@@ -137,7 +137,6 @@ smoothie.addTimeSeries(line2,{ strokeStyle:'rgb(255, 0, 255)',  lineWidth:2 });
 function startGraph(event)
 {
    smoothie.start();
-   sock = new SockJS('/data');
 }
 
 function stopGraph(event)
