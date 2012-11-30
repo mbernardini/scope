@@ -78,7 +78,6 @@ function SmoothieChart(options) {
   options = options || {};
   options.grid = options.grid || { fillStyle:'#000000', strokeStyle: '#777777', lineWidth: 1, millisPerLine: 1000, verticalSections: 2 };
   options.millisPerPixel = options.millisPerPixel || 20;
-  options.fps = options.fps || 50;
   options.maxValueScale = options.maxValueScale || 1;
   options.minValue = options.minValue;
   options.maxValue = options.maxValue;
@@ -120,13 +119,10 @@ window.requestAnimFrame = (function(){
 SmoothieChart.prototype.streamTo = function(canvas, delay) {
   var self = this;
   this.render_on_tick = function(time) {
-    self.render(canvas, time);//new Date().getTime() - (delay || 0));
+    self.render(canvas, time);
   };
 
   this.start();
-  //this.canvas = canvas;
-  //self.render(new Date().getTime() - (delay || 0));
-  //window.requestAnimationFrame(self.render,this.canvas);
 };
 
 SmoothieChart.prototype.start = function() {

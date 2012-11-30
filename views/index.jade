@@ -5,68 +5,57 @@ html(lang="en")
       link(rel="stylesheet", href="bootstrap/css/bootstrap.min.css")
       link(rel="stylesheet", href="slickgrid/slick.grid.css")
       link(rel="stylesheet", href="slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css")
+      link(rel="stylesheet", href="css/scope.css")
       script(src='http://code.jquery.com/jquery-latest.js')
       script(src='bootstrap/js/bootstrap.min.js')
       script(src='js/sockjs-0.3.min.js')
       script(src='js/BlobBuilder.min.js')
       script(src='js/FileSaver.min.js')
+      script(src='js/underscore.js')
+      script(src='js/backbone.js')
       script(src="slickgrid/lib/jquery.event.drag-2.0.min.js")
       script(src="slickgrid/slick.core.js")
       script(src="slickgrid/slick.grid.js")
    body
+     div(id="wrap")
       div(class="container-fluid")
-         div(class="row-fluid")
-            div(class="span4")
-               h1= appTitle
-            div(class="span4 offset4")     
-               h5 A HTML Demo for real time data logging.
-         div(class="row-fluid")
+         div(class="page-header")
+            div(class="row-fluid")
+              div(class="span4")
+                h1= appTitle
+              div(class="span4 offset4")     
+                h5(class="pull-right") A HTML Demo for real time data logging.
+         #chartArea.row-fluid
             div(class="span8 offset2")
                canvas(id="plot", style="height: 400px;")
-
+            div#config.accordion.span2
+               div.accordion-group
+                  div.accordion-heading
+                     a.accordion-toggle(data-toggle="collapse",data-parent="#config",href="#netStats") Network Stats
+                  div#netStats.accordion-body
+                     include includes/networkStats
+                  div.accordion-heading
+                     a.accordion-toggle(data-toggle="collapse",data-parent="#config",href="#deviceConfig") Device
+                  div#deviceConfig.accordion-body.collapse 
+                     include includes/deviceConfig
          div(class="row-fluid")
-            div(class="span4 offset2")
+            div(class="span2 offset2")
                div(class="btn-group pull-left",data-toggle="buttons-radio")
                   button(class="btn start", type="button",onclick="startGraph(event)") 
                      i(class="icon-play")
                   button(class="btn stop", type="button", onclick="stopGraph(event)")
                      i(class="icon-stop")
-               button(class="btn btn-danger record",data-toggle="button", type="button",onclick="record(event)") Record
+            div(class="span2 offset4")
+               button(class="btn btn-danger record pull-right",data-toggle="button", type="button",onclick="record(event)") Record
 
-            div(class="span4")
-               div(class="btn-group pull-right",data-toggle="buttons-radio")
-                  button(type="button",class="btn btn-inverse bezierToggleButton",onclick="setBezier(event)") Bezier
-                  button(type="button",class="btn btn-inverse lineToggleButton",onclick="setLine(event)") Line
-            div(class="span2")
-               p(class="latency")
+           //- Some day we might have decent smoothing function but using smmothies
+           //- built in one is no good :(
+           //- div(class="span4")
+           //_    button(type="button",class="btn btn-inverse bezierToggleButton pull-right",onclick="setBezier(event)", data-toggle="button") Line Smoothing
+         include includes/dataLogger
+
+      div(id="push")
+     script(src='/smoothie.js')
+     script(src='/serverConnection.js')   
          
-         div(class="row-fluid")
-            div(class="span8")
-               div(class="row-fluid")
-                  div(class="span2")
-                     img(src="images/140px-Voltmeter_hg.jpg",class="img-polaroid")
-                  div(class="span2")
-                     form
-                        fieldset
-                           legend &nbsp;T1000 Voltometer
-                           label(class="control-label", for="deviceDescrptionTxt") Description
-                           textarea(id="deviceDescrptionTxt",rows="3",placeholder="Device description.")
-                           label(class="control-label",for="sampleRate") Sample Frequency
-                           select(id="sampleRate")
-                              option 0.01 Hz
-                              option 0.1  Hz
-                              option 1 Hz
-                              option 10 Hz
-                              option 100 Hz
-         
-         div(class="row-fluid")
-            div(class="span2 offset8")
-               button(type="button", class="btn", onclick="saveToFile(event)")
-                  i(class="icon-file")
-         div(class="row-fluid")
-            div(class="span8 offset2")
-               div(id="dataGrid",style="width:100%;height:500px;")
-      script(src='/smoothie.js')
-      script(src='/serverConnection.js')   
-         
-      include includes/footer
+     include includes/footer

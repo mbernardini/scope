@@ -1,14 +1,57 @@
 
 var isRecording = false;
+$(function(){
+   
+var Device = Backbone.Model.extend({});
+window.currentDevice = new Device({sampleRate:100});
 
+var DataGridView = Backbone.Model.extend({
+   elId:"#dataGrid",
+   data: [{},{},{},{},{},{},{},{},{},{}],
+   columns: [
+                 {id: "dataIndex", name: "#", field: "dataIndex", selectable:false, width: 50, resizable: false,cssClass: "cell-selection" },
+                 {id: "time", name: "Time Stamp", field: "time", sortable: true},
+                 {id: "v1", name: "Analog 1", field: "v1",sortable: true},
+                 {id: "v2", name: "Analog 2", field: "v2",sortable: true},
+                 {id: "v3", name: "Analog 3", field: "v3",sortable: true},
+                 {id: "d1", name: "Digital 1", field: "d1",sortable: true},
+                 {id: "d2", name: "Digital 2", field: "d2",sortable: true}
+                ],
+
+  options: {
+      enableCellNavigation: true,
+      enableColumnReorder: false,
+      forceFitColumns: true},
+  initialize: function(){
+      this.grid = new Slick.Grid(this.elId, this.data, this.columns, this.options);
+  },
+  updateView: function(){
+      this.grid.updateRowCount();
+      this.grid.render();
+  },
+  addRow:function(timestamp, values){
+     this.data.push({dataIndex:this.data.length,time:timestamp/1000, v1:values[0], v2:values[1]});
+     this.updateView();
+  },
+  clear:function(){
+    this.data = [];
+    this.grid.setData(this.data) 
+    this.updateView();
+  }
+});
+
+window.grid = new DataGridView();
+grid.initialize();
+});
+
+//Install the tool tips:
+$('.tt').tooltip({delay: { show: 100, hide: 100 }});
 
 sock = new SockJS('/data');
 //sock = new WebSocket('/data');
 sock.ping = function(){
-   //if(this.protocol){
       this.lastPingTime = new Date().getTime();
       this.send('ping');
-   //}
 }
 sock.onopen = function() {
    this.totalPingPongs = 0;
@@ -21,6 +64,7 @@ sock.onmessage = function(e) {
       this.lastPongTime = new Date().getTime();
       this.onTheWireTime = this.lastPongTime - this.lastPingTime;
       this.totalPingPongs++;
+      $('.latencyOnWire').text((this.onTheWireTime/2000).toFixed(3) + "s");
       return;
    }
    this.totalMessagesReceived++;
@@ -32,12 +76,11 @@ sock.onmessage = function(e) {
       addDataPoint(data[i].time, data[i].values);
    }
    if(isRecording){
-      grid.updateRowCount();
-      grid.render();
+      grid.updateView();
    }
    
    var avg = this.computeLatency(decodedMessage.timeSpanStart, decodedMessage.timeSpanEnd);
-   $('.latency').text("Average data latency: "+ avg.toFixed(3) + " seconds.");
+   $('.latency').text( avg.toFixed(3) +"s");
    
    if(!(this.totalMessagesReceived % 10))
    {
@@ -63,38 +106,20 @@ var smoothie = new SmoothieChart({
   grid: { strokeStyle:'rgb(0, 125, 0)', fillStyle:'rgb(0, 30, 0)',
           lineWidth: 0.1, millisPerLine: 1000, verticalSections: 6 },
   labels: { fillStyle:'rgb(0, 125, 0)' },
-  fps: 30,
   millisPerPixel:10,
   timestampFormatter: SmoothieChart.timeFormatter,
   verticalAxisFormatter: voltageFormatter,
   interpolation: "line"
 });
 smoothie.streamTo(document.getElementById("plot"));
-
 // Data
 var line1 = new TimeSeries();
 var line2 = new TimeSeries();
-var data = [];
-var grid;
-var columns = [
-                 {id: "time", name: "Time Stamp", field: "time", sortable: true},
-                 {id: "v1", name: "Analog 1", field: "v1"},
-                 {id: "v2", name: "Analog 2", field: "v2"},
-                 {id: "v3", name: "Analog 3", field: "v3"},
-                 {id: "d1", name: "Digital 1", field: "d1"},
-                 {id: "d2", name: "Digital 2", field: "d2"}
-                ];
 
-var options = {
-      enableCellNavigation: true,
-      enableColumnReorder: false,
-      forceFitColumns: true
-};
 
-grid = new Slick.Grid("#dataGrid", data, columns, options);
 function addDataPoint(timestamp, values){
    if(isRecording){
-      data.push({time:timestamp/1000, v1:values[0], v2:values[1]});
+      grid.addRow(timestamp, values);
    }
    line1.append(timestamp, values[0]);
    line2.append(timestamp, values[1]);
@@ -127,21 +152,44 @@ function stopGraph(event)
 
 function record(event){
    isRecording = true;
+   grid.clear();
 }
 
 function setBezier(event)
 {
-	smoothie.options.interpolation = "bezier";
+	if(smoothie.options.interpolation == "bezier"){
+	   smoothie.options.interpolation = "line"; 
+	}
+	else{
+	   smoothie.options.interpolation = "bezier";
+	}
 }
 
 function setLine(event)
 {
 	smoothie.options.interpolation = "line";	
 }
+
+function updateSampleRate(event){
+   var selection = $('#samplingRateSelection option:selected').val();
+   $.ajax({
+    url: '/device/sampleRate/',
+    type: 'POST',
+    data: JSON.stringify({ sampleRate: parseFloat(selection) }),
+    contentType: "application/json; charset=utf-8",
+    dataType: "json",
+    success: function() { alert('post completed'); }
+});
+   
+}
+
+function deleteLog(event){
+   grid.clear();
+}
 function saveToFile(event){
    var bb = new BlobBuilder;
-   for(var i = 0; i != data.length;i++){
-      var obj = data[i];
+   for(var i = 0; i != grid.data.length;i++){
+      var obj = grid.data[i];
       var isFirst = true;
       var row = "";
       for(key in obj)
@@ -160,7 +208,4 @@ function saveToFile(event){
       bb.append(row);
    }
    saveAs(bb.getBlob("text/plain;charset=utf-8"), "data.csv");
-
-   alert("Not yet implemented");
-    
 }
