@@ -91,6 +91,8 @@ function SmoothieChart(options) {
   this.seriesSet = [];
   this.currentValueRange = 1;
   this.currentVisMinValue = 0;
+  // Time Offset is a way to shift the time series left or right
+  this.timeOffset = 0;
   this.canvas = null;
 }
 
@@ -105,7 +107,7 @@ SmoothieChart.prototype.removeTimeSeries = function(timeSeries) {
 /**
  * Request animation frame shim to ensure cross browser compatibility.
  */
-window.requestAnimFrame = (function(){
+window.requestAnimationFrame = (function(){
       return  window.requestAnimationFrame       || 
               window.webkitRequestAnimationFrame || 
               window.mozRequestAnimationFrame    || 
@@ -143,7 +145,7 @@ SmoothieChart.timeFormatter = function(dateObject) {
 SmoothieChart.prototype.render = function(canvas, time) {
   // Set up the animation for the next frame before rendering.
   if(this.isRunning){
-      window.requestAnimFrame(this.render_on_tick);
+      window.requestAnimationFrame(this.render_on_tick);
   }
   var canvasContext = canvas.getContext("2d");
   var options = this.options;
@@ -156,7 +158,7 @@ SmoothieChart.prototype.render = function(canvas, time) {
   canvasContext.save();
 
   // Round time down to pixel granularity, so motion appears smoother.
-  time = time - time % options.millisPerPixel;
+  time = time - time % options.millisPerPixel + this.timeOffset;
 
   // Move the origin.
   canvasContext.translate(dimensions.left, dimensions.top);

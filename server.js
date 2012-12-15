@@ -141,11 +141,11 @@ app.get('/', function(req, res) {
   
 });
 //app.param('srate', /^[0-9]+$/);
-app.get('/device/sampleRate/'), function(){
+app.get('/device/:id', function(req, res){
    var msg = {sampleRate: mockDevice.samplingRate};
    res.send(JSON.stringify(msg));
-}
-app.post('/device/sampleRate/', function (req, res) {
+});
+app.post('/device/:id', function (req, res) {
    var rate = req.body;
    console.log("updating sample rate to: "+rate.sampleRate);
    if(rate.sampleRate){

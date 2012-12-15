@@ -1,9 +1,55 @@
 
 var isRecording = false;
 $(function(){
+var DeviceInputs = Backbone.Model.extend({
+   name:"i1, i2, etc",
+   type:"analog",
+   enabled:false
+});
+
+var Device = Backbone.Model.extend({
+   allowedSampleRates:["0.1","1.0","10.0","100.0","200.0"],
+   sampleRate:null,
+   deviceInputs: [],
+   urlRoot:"/device/",
+   initialize: function(){
+      
+   },
+   sampleRateChaged: function(event){
+      var device = event.data.device;
+      device.set("sampleRate", event.target.value);
+      device.save();
+   }
+});
+
+var currentDevice = new Device({id:"10"});
+
+
+var DeviceSampleRateView = Backbone.View.extend({
+   el: $("#samplingRateSelection"),
+   initialize: function(){
+      currentDevice.on("change:sampleRate", this.renderSelectedSampleRate, this);
+      currentDevice.on("change:allowedSampleRates", this.renderAllowedRates, this);
+      $(this.el).on("change",{device:currentDevice},currentDevice.sampleRateChaged);
+      currentDevice.fetch();
+      this.renderAllowedRates();
+   },
+  
+   renderSelectedSampleRate: function(){
+      $(this.el).val(currentDevice.get("sampleRate"));
+   },
    
-var Device = Backbone.Model.extend({});
-window.currentDevice = new Device({sampleRate:100});
+   renderAllowedRates: function(){
+     var selection = $(this.el);
+     var allowed = currentDevice.allowedSampleRates;
+     $.each(allowed, function(key,value) {   
+     selection.append($("<option></option>")
+         .attr("value",value)
+         .text(value + " Hz")); 
+      }); 
+   }
+});
+var samleRateView = new DeviceSampleRateView();
 
 var DataGridView = Backbone.Model.extend({
    elId:"#dataGrid",
@@ -75,6 +121,10 @@ sock.onmessage = function(e) {
    {
       addDataPoint(data[i].time, data[i].values);
    }
+   if(smoothie){
+      smoothie.timeOffset = decodedMessage.timeSpanEnd - Date.now();
+   }
+   
    if(isRecording){
       grid.updateView();
    }
@@ -125,9 +175,6 @@ function addDataPoint(timestamp, values){
    line2.append(timestamp, values[1]);
 }
 
-// Add a random value to each line every second
-var intervalId = null;//startTimeSeries();
-
 $('.start').button('toggle');
 $('.lineToggleButton').button('toggle');
 // Add to SmoothieChart
@@ -150,8 +197,13 @@ function stopGraph(event)
 }
 
 function record(event){
-   isRecording = true;
-   grid.clear();
+   if(isRecording){
+      isRecording = false;
+   }
+   else{
+      isRecording = true;
+      grid.clear();
+   }
 }
 
 function setBezier(event)

@@ -26,7 +26,28 @@ html(lang="en")
               div(class="span4 offset4")     
                 h5(class="pull-right") A HTML Demo for real time data logging.
          #chartArea.row-fluid
-            div(class="span8 offset2")
+            div#inputOptions.span2
+               div.accordion-group
+                  div.accordion-heading
+                     a.accordion-toggle(data-toggle="collapse",data-parent="#inputOptions",href="#inputOpts") Device Input
+                  div#inputOpts.accordion-body
+                     div.row-fluid
+                        div.span12
+                          form.form.span12
+                             label.checkbox.span12 Analog Input- A1 
+                               input#i1(type="checkbox")
+                             label.checkbox.span12 Analog Input- A2
+                               input#i2(type="checkbox")
+                             label.checkbox.span12 Analog Input- A3
+                               input#i3(type="checkbox")
+                             label.checkbox.span12 Analog Input- A4
+                               input#i4(type="checkbox")
+                             label.checkbox.span12 Digital Input- D1
+                               input#i5(type="checkbox")
+                             label.checkbox.span12 Digital Input- D2
+                               input#i6(type="checkbox")
+
+            div.span8
                canvas(id="plot", style="height: 400px;")
             div#config.accordion.span2
                div.accordion-group
@@ -35,7 +56,7 @@ html(lang="en")
                   div#netStats.accordion-body
                      include includes/networkStats
                   div.accordion-heading
-                     a.accordion-toggle(data-toggle="collapse",data-parent="#config",href="#deviceConfig") Device
+                     a.accordion-toggle(data-toggle="collapse",data-parent="#config",href="#deviceConfig") Sample Rate
                   div#deviceConfig.accordion-body.collapse 
                      include includes/deviceConfig
          div(class="row-fluid")
@@ -48,7 +69,7 @@ html(lang="en")
             div(class="span2 offset4")
                button(class="btn btn-danger record pull-right",data-toggle="button", type="button",onclick="record(event)") Record
 
-           //- Some day we might have decent smoothing function but using smmothies
+           //- Some day we might have decent smoothing function but using smoothies
            //- built in one is no good :(
            //- div(class="span4")
            //_    button(type="button",class="btn btn-inverse bezierToggleButton pull-right",onclick="setBezier(event)", data-toggle="button") Line Smoothing
